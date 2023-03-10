@@ -17,6 +17,7 @@
     "@typescript-eslint/explicit-function-return-type": "off",
     "@typescript-eslint/dot-notation": "off",
     "@typescript-eslint/promise-function-async": "off",
-    "@typescript-eslint/strict-boolean-expressions": "off"
+    "@typescript-eslint/strict-boolean-expressions": "off",
+    "@typescript-eslint/no-unused-vars": "warn"
   }
 }

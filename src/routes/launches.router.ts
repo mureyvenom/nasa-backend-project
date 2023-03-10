@@ -13,4 +13,6 @@ launchesRouter.post('/launches', addNewLaunch);
 
 launchesRouter.delete('/launches/:id', deleteSavedLaunch);
 
+launchesRouter.delete('/launches', deleteSavedLaunch);
+
 export default launchesRouter;
