@@ -1,8 +1,8 @@
 import { RequestHandler } from 'express';
-import planets from '../models/planets.model';
+import { fetchPlanets } from '../models/planets.model';
 
-const getAllPlanets: RequestHandler = (_, res, next) => {
-  return res.status(200).json(planets);
+const getAllPlanets: RequestHandler = async (_, res, next) => {
+  return res.status(200).json(await fetchPlanets());
 };
 
 export { getAllPlanets };
