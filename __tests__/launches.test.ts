@@ -1,10 +1,14 @@
 import request from 'supertest';
-import { mongoConnect } from '../src/utils/mongo';
+import { mongoConnect, mongoDisconnect } from '../src/utils/mongo';
 import app from '../src/app';
 
 describe('launches api', () => {
   beforeAll(async () => {
     await mongoConnect();
+  });
+
+  afterAll(async () => {
+    await mongoDisconnect();
   });
 
   describe('Test /GET launches', () => {
@@ -18,7 +22,7 @@ describe('launches api', () => {
   describe('Test /POST launches', () => {
     it('Should respond with a 200 status response', async () => {
       const newLaunch = {
-        destination: 'Kepler-186 F',
+        destination: 'Kepler-296 A f',
         rocket: 'Venom Experimental V2',
         mission: 'Venom V2S1',
         launchDate: 'January 27, 2027',

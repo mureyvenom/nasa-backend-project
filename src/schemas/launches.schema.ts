@@ -21,7 +21,6 @@ export const launchesSchema = new Schema({
   },
   destination: {
     type: String,
-    required,
   },
   // destination: {
   //   type: Schema.Types.ObjectId,

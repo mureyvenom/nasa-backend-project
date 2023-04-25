@@ -1,11 +1,28 @@
+import axios from 'axios';
 import launchesSchema from '../schemas/launches.schema';
 import planetsSchema from '../schemas/planets.schema';
+import { runPagination } from '../utils/helpers';
+
+const exampleLaunch = {
+  _id: '6410f199a0004b1399ace2c8',
+  flightNumber: 100,
+  __v: 0,
+  customer: ['NASA', 'Venom'],
+  destination: 'Kepler-442 b',
+  launchDate: '2030-12-26T23:00:00.000Z',
+  mission: 'Kepler mission',
+  rocket: 'Explorer KS1',
+  success: true,
+  upcoming: true,
+};
 
 const launches = new Map();
 
 export let latestFlightNumber = 100;
 
 const LATEST_FLIGHT_NUMBER = 150;
+
+const SPACE_X_BASE_URL = 'https://api.spacexdata.com/v4/launches/query';
 
 export const increment = () => {
   latestFlightNumber++;
@@ -24,8 +41,15 @@ export const launch = {
 
 launches.set(launch.flightNumber, launch);
 
-export const getLaunches = async () => {
-  return await launchesSchema.find();
+export const getLaunches = async (page?: number, limit?: number) => {
+  const { skip } = runPagination({ page, limit });
+  return await launchesSchema
+    .find()
+    .limit(limit ?? 0)
+    .skip(skip)
+    .sort({
+      flightNumber: 1,
+    });
 };
 
 export const launchExists = async (id: number) => {
@@ -44,15 +68,7 @@ export const getLatestFlightNumber = async () => {
   return latestLaunch.flightNumber;
 };
 
-const saveLaunch = async (_launch: typeof launch) => {
-  const planet = await planetsSchema.findOne({
-    keplerName: _launch.destination,
-  });
-
-  if (!planet) {
-    throw new Error('Invalid planet entered');
-  }
-
+const saveLaunch = async (_launch: any) => {
   return await launchesSchema.updateOne(
     {
       flightNumber: _launch.flightNumber,
@@ -62,7 +78,77 @@ const saveLaunch = async (_launch: typeof launch) => {
   );
 };
 
+export const findLaunch = async (filter: any) => {
+  return await launchesSchema.findOne(filter);
+};
+
+export const populateLaunches = async () => {
+  const response = await axios.post(SPACE_X_BASE_URL, {
+    query: {},
+    options: {
+      pagination: false,
+      populate: [
+        {
+          path: 'rocket',
+          select: {
+            name: 1,
+          },
+        },
+        {
+          path: 'payloads',
+          select: {
+            customers: 1,
+          },
+        },
+      ],
+    },
+  });
+
+  if (response.status !== 200) {
+    throw new Error('Couldnt get launches...');
+  }
+
+  const launchData = response.data.docs;
+  for (const launchDoc of launchData as any[]) {
+    const { payloads } = launchDoc;
+    const customers = (payloads as any[]).flatMap((payload: any) => payload.customers);
+    const launch: Partial<typeof exampleLaunch> = {
+      flightNumber: launchDoc.flight_number,
+      mission: launchDoc.name,
+      rocket: launchDoc.rocket.name,
+      launchDate: launchDoc.date_utc,
+      upcoming: launchDoc.upcoming || false,
+      success: launchDoc.success || false,
+      customer: customers,
+    };
+    // console.log('launch', launch);
+    await saveLaunch(launch);
+  }
+  console.log('launches loaded...');
+};
+
+export const loadLaunchesData = async () => {
+  const firstLaunch = await findLaunch({
+    flightNumber: 1,
+    rocket: 'Falcon 1',
+    mission: 'FalconSat',
+  });
+  if (firstLaunch) {
+    console.log('mission already loaded...');
+  } else {
+    await populateLaunches();
+  }
+};
+
 export const scheduleNewLaunch = async (_launch: Partial<typeof launch>) => {
+  const planet = await planetsSchema.findOne({
+    keplerName: _launch.destination,
+  });
+
+  if (!planet) {
+    throw new Error('Invalid planet entered');
+  }
+
   const newFlightNumber = (await getLatestFlightNumber()) + 1;
 
   const newLaunch = {

@@ -6,8 +6,9 @@ import {
   launchExists,
 } from '../models/launches.model';
 
-export const getAllLaunches: RequestHandler = async (_, res) => {
-  return res.status(200).json(await getLaunches());
+export const getAllLaunches: RequestHandler = async (req, res) => {
+  const { page, limit } = req.query;
+  return res.status(200).json(await getLaunches(Number(page), Number(limit)));
 };
 
 export const addNewLaunch: RequestHandler = async (req, res) => {
